@@ -1,0 +1,40 @@
+from langchain.tools import tool
+import requests
+from bs4 import BeautifulSoup
+from tavily import TavilyClient
+import os
+from dotenv import load_dotenv
+load_dotenv()
+from rich import print 
+
+tavily = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
+
+@tool
+def web_search(query : str) ->str :
+    """search the web for recent and relaible informationon a topic . returns title , URLS, and snippets."""
+    results = tavily.search(query=query,max_results=5)
+
+    out = []
+    for r in results["results"]:
+        out.append(
+            f"title: {r['title']}\nURL: {r['url']}\nSnippet: {r['content'][:300]}\n")
+
+    return "\n-----\n".join(out)
+
+#print(web_search.invoke("what re the recent news of war"))
+
+@tool
+def scrape_url(url :str) ->str:
+    """scrape and return clean text content from a given url for deepe reading."""
+    try:
+        responce = requests.get(url, timeout=10, headers={"user_agent": "mozila/5.0"})
+        soup = BeautifulSoup(responce.text, "html.parser")
+        for tag in soup(["script","style","nav","footer"]):
+            tag.decompose()
+        return soup.get_text(separator=" ",strip=True)[:3000]
+    except Exception as e :
+        return f"could not scrape url : {str(e)}"
+
+
+
+print(scrape_url.invoke("https://www.cbsnews.com/live-updates/us-iran-war-trump-ceasefire-talks-strait-of-hormuz/"))

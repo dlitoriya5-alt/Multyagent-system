@@ -1,0 +1,47 @@
+# LLM
+langchain
+langchain-core
+langchain-community
+langchain-mistralai
+mistralai
+
+# Search Tool
+tavily-python
+
+# Web Scraping
+beautifulsoup4
+requests
+lxml
+html5lib
+
+# Environment Variables
+python-dotenv
+
+# Token Counting
+tiktoken
+
+# Data Validation
+pydantic
+
+# Async Support
+httpx
+aiohttp
+
+# Retry Mechanism
+tenacity
+
+# Rich Console Output
+rich
+
+# Utilities
+typing-extensions
+
+# Data Handling (Optional)
+pandas
+numpy
+
+# CLI (Optional)
+typer
+
+# Testing (Optional)
+pytest

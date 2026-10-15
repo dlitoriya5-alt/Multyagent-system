@@ -2,8 +2,7 @@
 langchain
 langchain-core
 langchain-community
-langchain-mistralai
-mistralai
+langchain-google-genai
 
 # Search Tool
 tavily-python
@@ -45,3 +44,5 @@ typer
 
 # Testing (Optional)
 pytest
+
+streamlit

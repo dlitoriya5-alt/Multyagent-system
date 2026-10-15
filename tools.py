@@ -1,40 +1,81 @@
-from langchain.tools import tool
+import os
+import re
 import requests
 from bs4 import BeautifulSoup
-from tavily import TavilyClient
-import os
 from dotenv import load_dotenv
+from langchain.tools import tool
+from tavily import TavilyClient
+
 load_dotenv()
-from rich import print 
 
-tavily = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
 
-@tool
-def web_search(query : str) ->str :
-    """search the web for recent and relaible informationon a topic . returns title , URLS, and snippets."""
-    results = tavily.search(query=query,max_results=5)
+def _get_tavily_client():
+    tavily_key = os.getenv("TAVILY_API_KEY", "")
+    if tavily_key:
+        tavily_key = tavily_key.strip().strip('"\'')
+    if not tavily_key:
+        return None
+    return TavilyClient(api_key=tavily_key)
 
-    out = []
-    for r in results["results"]:
-        out.append(
-            f"title: {r['title']}\nURL: {r['url']}\nSnippet: {r['content'][:300]}\n")
-
-    return "\n-----\n".join(out)
-
-#print(web_search.invoke("what re the recent news of war"))
 
 @tool
-def scrape_url(url :str) ->str:
-    """scrape and return clean text content from a given url for deepe reading."""
+def web_search(query: str) -> str:
+    """Search the web for recent and reliable information on a topic. Returns title, URLs, and snippets."""
     try:
-        responce = requests.get(url, timeout=10, headers={"user_agent": "mozila/5.0"})
-        soup = BeautifulSoup(responce.text, "html.parser")
-        for tag in soup(["script","style","nav","footer"]):
+        client = _get_tavily_client()
+        if not client:
+            return "Error: TAVILY_API_KEY is not configured. Please set TAVILY_API_KEY in your .env file."
+
+        clean_query = query.strip()
+        results = client.search(query=clean_query, max_results=5)
+
+        items = results.get("results", [])
+        if not items:
+            return f"No search results found for: {clean_query}"
+
+        out = []
+        for r in items:
+            title = r.get("title", "No Title")
+            url = r.get("url", "")
+            snippet = r.get("content", "")[:350].strip()
+            out.append(f"Title: {title}\nURL: {url}\nSnippet: {snippet}")
+
+        return "\n\n-----\n\n".join(out)
+    except Exception as e:
+        return f"Error performing web search: {str(e)}"
+
+
+@tool
+def scrape_url(url: str) -> str:
+    """Scrape and return clean text content from a given URL for deeper reading."""
+    try:
+        # Extract plain URL if model passed markdown link or quotes
+        match = re.search(r"https?://[^\s\)\]\"'>]+", url.strip())
+        target_url = match.group(0) if match else url.strip().strip('"\'')
+
+        headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+            ),
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+        }
+
+        response = requests.get(target_url, timeout=12, headers=headers)
+        response.raise_for_status()
+
+        soup = BeautifulSoup(response.text, "html.parser")
+        for tag in soup(["script", "style", "nav", "footer", "header", "noscript", "aside", "svg"]):
             tag.decompose()
-        return soup.get_text(separator=" ",strip=True)[:3000]
-    except Exception as e :
-        return f"could not scrape url : {str(e)}"
 
+        text = soup.get_text(separator=" ", strip=True)
+        # Collapse repeated whitespace
+        clean_text = re.sub(r"\s+", " ", text).strip()
 
+        if not clean_text:
+            return f"No readable text content found on URL: {target_url}"
 
-print(scrape_url.invoke("https://www.cbsnews.com/live-updates/us-iran-war-trump-ceasefire-talks-strait-of-hormuz/"))
+        return clean_text[:3500]
+    except Exception as e:
+        return f"Could not scrape URL ({url}): {str(e)}"

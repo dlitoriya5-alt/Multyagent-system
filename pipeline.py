@@ -1,72 +1,83 @@
-from agents import build_reader_agent, build_search_agent , writer_chain,critic_chain
+from agents import (
+    build_reader_agent,
+    build_search_agent,
+    critic_chain,
+    extract_text_content,
+    writer_chain,
+)
 
-def run_reasearch_pipeline(topic : str) ->dict:
 
+def run_research_pipeline(topic: str) -> dict:
     state = {}
 
-    #search agent working
-    print("\n"+" ="*50)
-    print("step 1 - search agent is working .....")
-    print("="*50)
-
+    # Step 1: Search Agent
+    print("\n" + "=" * 50)
+    print("Step 1 - Search Agent is gathering information...")
+    print("=" * 50)
 
     search_agent = build_search_agent()
     search_result = search_agent.invoke({
-        "messages": [("user", f"find recent , reliable and detailed information about : {topic}")]
+        "messages": [("user", f"Find recent, reliable, and detailed information about: {topic}")]
     })
-    state["search_result"] = search_result["messages"][-1].content
+    state["search_result"] = extract_text_content(search_result["messages"][-1].content)
+    print("\n[Search Results Summary]:\n", state["search_result"][:500], "...\n")
 
-    print("\n search result ",state['search_result'])
-
-
-
-    print("\n"+" ="*50)
-    print("step 2 - search agent is working .....")
-    print("="*50)
+    # Step 2: Reader Agent
+    print("\n" + "=" * 50)
+    print("Step 2 - Reader Agent is scraping the best source for deeper insights...")
+    print("=" * 50)
 
     reader_agent = build_reader_agent()
     reader_result = reader_agent.invoke({
-        "messages": [("user",
-                  f"based on the following results about '{topic}',"
-                  f"pick the most relavent URl and scrape it for deeper content.\n\n"
-                  f"search result : \n{state['search_result'][:800]}")]
+        "messages": [(
+            "user",
+            f"Based on the following search results about '{topic}', "
+            f"pick the single most relevant URL and scrape it for deeper content.\n\n"
+            f"Search Results:\n{state['search_result'][:1000]}"
+        )]
     })
+    state["scraped_content"] = extract_text_content(reader_result["messages"][-1].content)
+    print("\n[Scraped Content Preview]:\n", state["scraped_content"][:500], "...\n")
 
-    state["scraped_content"] =reader_result["messages"][-1].content
-
-    print("\nscraped content\n",state["scraped_content"])
-
-
-    print("\n"+" ="*50)
-    print("step 3 - writer is drafting the report  .....")
-    print("="*50)
+    # Step 3: Writer Chain
+    print("\n" + "=" * 50)
+    print("Step 3 - Writer is drafting the comprehensive research report...")
+    print("=" * 50)
 
     research_combined = (
-        f"SEARCH RESULTS : \n {state['search_result']} \n\n"
-        f"DETAILED SCRAPED CONTENT : \n {state['scraped_content']}"
+        f"SEARCH RESULTS:\n{state['search_result']}\n\n"
+        f"DETAILED SCRAPED CONTENT:\n{state['scraped_content']}"
     )
 
-    state["report"] = writer_chain.invoke({
-        "topic": topic,
-        "research": research_combined 
-    })
+    state["report"] = extract_text_content(
+        writer_chain.invoke({
+            "topic": topic,
+            "research": research_combined,
+        })
+    )
+    print("\n[Final Report Preview]:\n", state["report"][:500], "...\n")
 
-    print("\n final report \n",state["report"])
+    # Step 4: Critic Chain
+    print("\n" + "=" * 50)
+    print("Step 4 - Critic is reviewing and scoring the report...")
+    print("=" * 50)
 
-
-
-    print("\n"+" ="*50)
-    print("step 3 - critic is reviewing the report  .....")
-    print("="*50)
-
-    state["feedback"] = critic_chain.invoke({
-        "report": state["report"]
-    })
-
-    print("\n critic report \n ",state["feedback"])
+    state["feedback"] = extract_text_content(
+        critic_chain.invoke({
+            "report": state["report"],
+        })
+    )
+    print("\n[Critic Review]:\n", state["feedback"])
 
     return state
 
+
+# Backward compatibility alias
+run_reasearch_pipeline = run_research_pipeline
+
 if __name__ == "__main__":
-    topic = input("\n enater a research topic:")
-    run_reasearch_pipeline(topic)
+    user_topic = input("\nEnter a research topic: ").strip()
+    if user_topic:
+        run_research_pipeline(user_topic)
+    else:
+        print("No topic provided. Exiting.")

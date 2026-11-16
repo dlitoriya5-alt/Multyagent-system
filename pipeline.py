@@ -33,7 +33,7 @@ def run_research_pipeline(topic: str) -> dict:
             "user",
             f"Based on the following search results about '{topic}', "
             f"pick the single most relevant URL and scrape it for deeper content.\n\n"
-            f"Search Results:\n{state['search_result'][:1000]}"
+            f"Search Results:\n{state['search_result']}"
         )]
     })
     state["scraped_content"] = extract_text_content(reader_result["messages"][-1].content)

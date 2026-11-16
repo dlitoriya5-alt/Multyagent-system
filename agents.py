@@ -14,7 +14,7 @@ if api_key:
     os.environ["GOOGLE_API_KEY"] = api_key
     os.environ["GEMINI_API_KEY"] = api_key
 
-model_name = os.getenv("GEMINI_MODEL", "gemini-3.7-flash")
+model_name = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
 
 llm = ChatGoogleGenerativeAI(
     model=model_name,
@@ -49,7 +49,7 @@ def build_search_agent():
         system_prompt=(
             "You are an expert research search agent. "
             "Use the web_search tool to gather reliable, recent, and factual information on the requested topic. "
-            "Always include source URLs and key snippets in your response."
+            "Synthesize your findings and ALWAYS include an explicit list of all discovered source URLs."
         ),
     )
 
@@ -60,8 +60,8 @@ def build_reader_agent():
         tools=[scrape_url],
         system_prompt=(
             "You are an expert web reader agent. "
-            "Review the provided search findings, pick the single most authoritative and relevant URL, "
-            "and call the scrape_url tool to extract comprehensive details for deep analysis."
+            "Review the provided search findings, find the most authoritative and informative URL, "
+            "and call the scrape_url tool with that URL to read its full content."
         ),
     )
 

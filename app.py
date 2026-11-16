@@ -181,7 +181,7 @@ with st.sidebar:
         else:
             st.markdown('<span class="metric-badge badge-warning">⚠ No Tavily Key</span>', unsafe_allow_html=True)
 
-    current_model = getattr(llm, "model", "gemini-3.7-flash")
+    current_model = getattr(llm, "model", "gemini-3.5-flash-lite")
     st.markdown(f'<div style="margin-top: 10px;"><span class="metric-badge badge-model">⚡ Engine: {current_model}</span></div>', unsafe_allow_html=True)
     st.divider()
 
@@ -220,7 +220,7 @@ with st.sidebar:
             st.rerun()
 
     st.divider()
-    st.caption("Powered by Google Gemini 3.7 & LangGraph Agent Framework.")
+    st.caption(f"Powered by Google Gemini ({current_model}) & LangGraph Agent Framework.")
 
 # ---------------------------------------------------------
 # Hero Banner & Architecture Display
@@ -297,7 +297,7 @@ def run_pipeline_with_ui(target_topic: str) -> dict:
     # Step 2: Reader Agent
     with st.status("📖 Step 2: Reader Agent is analyzing & scraping the primary source...", expanded=True) as status_2:
         reader_agent = build_reader_agent()
-        search_snippet = state["search_result"][:1000]
+        search_snippet = state["search_result"]
         reader_res = reader_agent.invoke({
             "messages": [(
                 "user",
